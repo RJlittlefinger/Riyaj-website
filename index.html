@@ -1,20 +1,15 @@
-<nav class="navbar">
-  <a href="#">Home</a>
-  <a href="#">About</a>
-
-  <div class="dropdown">
-    <button onclick="toggleMenu()" class="dropbtn">Services ⬇</button>
-    <div id="dropdownMenu" class="dropdown-content">
-      <a href="#">Web Design</a>
-      <a href="#">Data Entry</a>
-      <a href="#">Excel Work</a>
-    </div>
-  </div>
-
-  <a href="#">Contact</a>
-</nav>
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+body {
+  margin: 0;
+  font-family: Arial;
+}
+
+/* Navbar */
 .navbar {
   background: #333;
   text-align: center;
@@ -41,7 +36,6 @@
   position: absolute;
   background: white;
   min-width: 150px;
-  left: 0;
 }
 
 .dropdown-content a {
@@ -54,15 +48,50 @@
 .dropdown-content a:hover {
   background: lightgray;
 }
+
+/* Content */
+.content {
+  padding: 40px;
+  text-align: center;
+}
 </style>
+</head>
+
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+  <a href="#">Home</a>
+  <a href="#">About</a>
+
+  <div class="dropdown">
+    <button onclick="toggleMenu()" class="dropbtn">Services ⬇</button>
+    <div id="menu" class="dropdown-content">
+      <a href="#">Web Design</a>
+      <a href="#">Data Entry</a>
+      <a href="#">Excel Work</a>
+    </div>
+  </div>
+
+  <a href="#">Contact</a>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <h1>Welcome to My Website 🚀</h1>
+  <p>This is my first live website!</p>
+</div>
 
 <script>
 function toggleMenu() {
-  var menu = document.getElementById("dropdownMenu");
-  if (menu.style.display === "block") {
-    menu.style.display = "none";
+  var x = document.getElementById("menu");
+  if (x.style.display === "block") {
+    x.style.display = "none";
   } else {
-    menu.style.display = "block";
+    x.style.display = "block";
   }
 }
 </script>
+
+</body>
+</html>
