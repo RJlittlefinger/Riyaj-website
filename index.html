@@ -1,137 +1,141 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-}
-
-/* Navbar */
-.navbar {
-  background: #333;
-  text-align: center;
-  padding: 10px;
-}
-
-.navbar a, .dropbtn {
-  color: white;
-  padding: 10px 15px;
-  text-decoration: none;
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.dropdown {
-  display: inline-block;
-  position: relative;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background: white;
-  min-width: 150px;
-}
-
-.dropdown-content a {
-  color: black;
-  padding: 10px;
-  display: block;
-  text-decoration: none;
-}
-
-.dropdown-content a:hover {
-  background: lightgray;
-}
-
-/* Content */
-.content {
-  padding: 40px;
-  text-align: center;
-}
-</style>
-</head>
-
-<body>
-
-<!-- Navbar -->
-<div class="navbar">
-  <a href="#">Home</a>
-  <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Legendary Trading System</title>
+    <title>Legendary Trading System - Pro UI</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #121212; color: white; }
-        .box { border: 1px solid #333; padding: 20px; border-radius: 8px; background: #1e1e1e; max-width: 40px; }
-        select, input, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #444; background: #2b2b2b; color: white; }
-        button { background: #00bcd4; color: black; font-weight: bold; cursor: pointer; border: none; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #121212; color: white; }
+        .box { border: 1px solid #333; padding: 25px; border-radius: 12px; background: #1e1e1e; max-width: 450px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2 { text-align: center; color: #00bcd4; margin-bottom: 20px; }
+        label { font-size: 14px; color: #aaa; display: block; margin-top: 15px; }
+        select, input, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 6px; border: 1px solid #444; background: #2b2b2b; color: white; box-sizing: border-box; font-size: 15px; }
+        input:focus, select:focus { border-color: #00bcd4; outline: none; }
+        
+        /* সার্চ ও ড্রপ-ডাউন ডিজাইন */
+        .search-container { position: relative; }
+        .dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #252525; border: 1px solid #444; border-top: none; border-radius: 0 0 6px 6px; z-index: 1000; display: none; }
+        .dropdown-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; font-size: 14px; }
+        .dropdown-item:hover { background: #00bcd4; color: black; font-weight: bold; }
+        .recent-tag { color: #ff9800; font-size: 11px; font-weight: bold; float: right; border: 1px solid #ff9800; padding: 1px 4px; border-radius: 3px; }
+        
+        button { background: #00bcd4; color: black; font-weight: bold; cursor: pointer; border: none; margin-top: 25px; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #0097a7; box-shadow: 0 0 10px rgba(0,188,212,0.4); }
     </style>
 </head>
 <body>
 
 <div class="box">
     <h2>মার্কেট কন্ট্রোল প্যানেল</h2>
+    
     <label>মার্কেট নির্বাচন করুন:</label>
     <select id="marketSelect">
         <option value="NSE">NSE</option>
         <option value="BSE">BSE</option>
     </select>
 
-    <label>কোম্পানি ইনস্ট্রুমেন্ট টোকেন:</label>
-    <input type="text" id="tokenInput" placeholder="যেমন: Reliance-এর টোকেন">
+    <label>কোম্পানির নাম লিখুন:</label>
+    <div class="search-container">
+        <input type="text" id="stockSearch" placeholder="যেমন: Reliance, TCS, Infosys..." autocomplete="off" oninput="handleSearch()" onfocus="handleSearch()">
+        <div id="dropdownResults" class="dropdown-list"></div>
+    </div>
 
     <button onclick="startBot()">AI বিশ্লেষণ শুরু করুন</button>
 </div>
 
 <script>
+    // ভারতের প্রধান কিছু কোম্পানির ডামি ডেটাবেস (Upstox টোকেনসহ)
+    const stockDatabase = [
+        { name: "Reliance Industries (RELIANCE)", token: "NSE_EQ|INE002A01018" },
+        { name: "Tata Consultancy Services (TCS)", token: "NSE_EQ|INE467B01029" },
+        { name: "Infosys (INFY)", token: "NSE_EQ|INE009A01021" },
+        { name: "HDFC Bank (HDFCBANK)", token: "NSE_EQ|INE040A01034" },
+        { name: "Tata Motors (TATAMOTORS)", token: "NSE_EQ|INE155A01022" },
+        { name: "State Bank of India (SBIN)", token: "NSE_EQ|INE062A01020" },
+        { name: "Bharti Airtel (BHARTIARTL)", token: "NSE_EQ|INE397D01024" },
+        { name: "ICICI Bank (ICICIBANK)", token: "NSE_EQ|INE090A01021" }
+    ];
+
+    let selectedToken = "";
+    let recentSearches = JSON.parse(localStorage.getItem('recentStocks')) || [];
+
+    // ইনপুট দেওয়ার সাথে সাথে ফিল্টার এবং ড্রপ-ডাউন দেখানোর মেইন লজিক
+    function handleSearch() {
+        const input = document.getElementById("stockSearch").value.toLowerCase();
+        const dropdown = document.getElementById("dropdownResults");
+        dropdown.innerHTML = "";
+
+        let filteredStocks = [];
+
+        if (input === "") {
+            // ১. যদি সার্চ বক্স খালি থাকে, তাহলে শুধু আগের সার্চ করা (Recent) স্টকগুলো সবার ওপরে দেখাবে
+            filteredStocks = [...recentSearches];
+        } else {
+            // ২. টাইপ করা শুরু করলে, আগে ম্যাচিং হওয়া 'রিসেন্ট' স্টকগুলো টপে রাখবে, তারপর বাকিগুলো দেখাবে
+            const matchingRecent = recentSearches.filter(s => s.name.toLowerCase().includes(input));
+            const matchingMain = stockDatabase.filter(s => s.name.toLowerCase().includes(input) && !recentSearches.some(r => r.token === s.token));
+            filteredStocks = [...matchingRecent, ...matchingMain];
+        }
+
+        if (filteredStocks.length === 0) {
+            dropdown.style.display = "none";
+            return;
+        }
+
+        // ড্রপ-ডাউন আইটেম তৈরি করা
+        filteredStocks.forEach(stock => {
+            const item = document.createElement("div");
+            item.className = "dropdown-item";
+            
+            // চেক করা হচ্ছে এটা রিসেন্ট সার্চ কি না, হলে একটি 'Recent' ট্যাগ বসবে
+            const isRecent = recentSearches.some(r => r.token === stock.token);
+            item.innerHTML = stock.name + (isRecent ? ' <span class="recent-tag">Recent</span>' : '');
+            
+            // আইটেম ক্লিক করলে সিলেক্ট হবে
+            item.onclick = function() {
+                selectStock(stock.name, stock.token);
+            };
+            dropdown.appendChild(item);
+        });
+
+        dropdown.style.display = "block";
+    }
+
+    // ড্রপ-ডাউন থেকে কোম্পানি সিলেক্ট করার ফাংশন
+    function selectStock(name, token) {
+        document.getElementById("stockSearch").value = name;
+        selectedToken = token;
+        document.getElementById("dropdownResults").style.display = "none";
+
+        // ৩. রিসেন্ট সার্চ আপডেট করা এবং টপে পুশ করা (সর্বোচ্চ ৫টি রাখবে)
+        recentSearches = recentSearches.filter(s => s.token !== token); // ডুপ্লিকেট বাদ দেওয়া
+        recentSearches.unshift({ name: name, token: token }); // একদম শুরুতে বা টপে রাখা
+        if (recentSearches.length > 5) recentSearches.pop(); // ৫টার বেশি হলে পুরনোটা ডিলিট করা
+        
+        // ব্রাউজার মেমোরিতে সেভ রাখা যাতে পেজ রিফ্রেশ করলেও উধাও না হয়
+        localStorage.setItem('recentStocks', JSON.stringify(recentSearches));
+    }
+
+    // ফাইনাল সাবমিট
     function startBot() {
         let market = document.getElementById("marketSelect").value;
-        let token = document.getElementById("tokenInput").value;
-        alert("সিস্টেম সচল হচ্ছে! মার্কেট: " + market + " | টোকেন: " + token);
-        // এখানে ব্যাকএন্ড (Python) API-এর সাথে কানেক্ট করার রিকোয়েস্ট যাবে
+        let searchVal = document.getElementById("stockSearch").value;
+
+        if (!selectedToken || searchVal === "") {
+            alert("অনুগ্রহ করে ড্রপ-ডাউন থেকে একটি সঠিক কোম্পানি সিলেক্ট করুন।");
+            return;
+        }
+        
+        alert("সিস্টেম সচল হচ্ছে!\nমার্কেট: " + market + "\nনির্বাচিত কোম্পানি: " + searchVal + "\nটোকেন আইডি: " + selectedToken);
+        // এই selectedToken-টি এখন আপনার main.py ব্যাকএন্ডে চলে যাবে বিশ্লেষণের জন্য।
     }
-</script>
 
-</body>
-</html>
-  
-  <a href="#">About</a>
-
-  <div class="dropdown">
-    <button onclick="toggleMenu()" class="dropbtn">Services ⬇</button>
-    <div id="menu" class="dropdown-content">
-      <a href="#">Web Design</a>
-      <a href="#">Data Entry</a>
-      <a href="#">Excel Work</a>
-    </div>
-  </div>
-
-  <a href="#">Contact</a>
-</div>
-
-<!-- Content -->
-<div class="content">
-  <h1>Welcome to My Website 🚀</h1>
-  <p>This is my first live website!</p>
-</div>
-
-<script>
-function toggleMenu() {
-  var x = document.getElementById("menu");
-  if (x.style.display === "block") {
-    x.style.display = "none";
-  } else {
-    x.style.display = "block";
-  }
-}
+    // ড্রপ-ডাউনের বাইরে ক্লিক করলে সেটি বন্ধ করার জন্য
+    document.addEventListener("click", function(e) {
+        if (!e.target.closest('.search-container')) {
+            document.getElementById("dropdownResults").style.display = "none";
+        }
+    });
 </script>
 
 </body>
