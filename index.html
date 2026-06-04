@@ -62,6 +62,47 @@ body {
 <!-- Navbar -->
 <div class="navbar">
   <a href="#">Home</a>
+  <!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legendary Trading System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #121212; color: white; }
+        .box { border: 1px solid #333; padding: 20px; border-radius: 8px; background: #1e1e1e; max-width: 40px; }
+        select, input, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #444; background: #2b2b2b; color: white; }
+        button { background: #00bcd4; color: black; font-weight: bold; cursor: pointer; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>মার্কেট কন্ট্রোল প্যানেল</h2>
+    <label>মার্কেট নির্বাচন করুন:</label>
+    <select id="marketSelect">
+        <option value="NSE">NSE</option>
+        <option value="BSE">BSE</option>
+    </select>
+
+    <label>কোম্পানি ইনস্ট্রুমেন্ট টোকেন:</label>
+    <input type="text" id="tokenInput" placeholder="যেমন: Reliance-এর টোকেন">
+
+    <button onclick="startBot()">AI বিশ্লেষণ শুরু করুন</button>
+</div>
+
+<script>
+    function startBot() {
+        let market = document.getElementById("marketSelect").value;
+        let token = document.getElementById("tokenInput").value;
+        alert("সিস্টেম সচল হচ্ছে! মার্কেট: " + market + " | টোকেন: " + token);
+        // এখানে ব্যাকএন্ড (Python) API-এর সাথে কানেক্ট করার রিকোয়েস্ট যাবে
+    }
+</script>
+
+</body>
+</html>
+  
   <a href="#">About</a>
 
   <div class="dropdown">
