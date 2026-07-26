@@ -1,110 +1,284 @@
-import os
-import numpy as np
-import pandas as pd
-from dotenv import load_dotenv
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অনলাইন কিতাবঘর - ফ্রি পিডিএফ লাইব্রেরি</title>
+    <style>
+        /* বেসিক স্টাইল এবং রিসেট */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+        }
 
-# ১. পরিবেশ তৈরি ও ডেটা লোড
-load_dotenv()
+        /* ন্যাভিগেশন বার (হেডার) */
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        nav a:hover {
+            color: #3498db;
+        }
 
-def calculate_legendary_indicators(df):
-    """
-    মুভিং এভারেজ, MACD এবং ভলিউম ইন্ডিকেটর হিসাব করার ফাংশন
-    """
-    # ২০ দিনের সিম্পল মুভিং এভারেজ (Trend Filter)
-    df['SMA_20'] = df['close'].rolling(window=20).mean()
+        /* সার্চ সেকশন */
+        .search-section {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        .search-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .search-section p {
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            color: #bdc3c7;
+        }
+        .search-box {
+            display: flex;
+            justify-content: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .search-box input {
+            width: 75%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px 0 0 5px;
+            font-size: 1rem;
+            outline: none;
+        }
+        .search-box button {
+            width: 25%;
+            padding: 12px;
+            border: none;
+            background: #e74c3c;
+            color: white;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .search-box button:hover {
+            background: #c0392b;
+        }
 
-    # MACD গণনা (12, 26, 9)
-    exp1 = df['close'].ewm(span=12, adjust=False).mean()
-    exp2 = df['close'].ewm(span=26, adjust=False).mean()
-    df['MACD'] = exp1 - exp2
-    df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
-
-    # ভলিউম মুভিং এভারেজ (স্মার্ট মানি ট্র্যাকিং)
-    df['Vol_SMA'] = df['volume'].rolling(window=20).mean()
-    
-    return df
-
-def detect_candlestick_patterns(df):
-    """
-    লেজেন্ডারি ক্যান্ডেলস্টিক এবং প্যানিক রিভার্সাল প্যাটার্ন খোঁজার লজিক
-    """
-    # ক্যান্ডেলের বিভিন্ন অংশ নির্ধারণ
-    df['Body'] = abs(df['close'] - df['open'])
-    df['Total_Range'] = df['high'] - df['low']
-    df['Lower_Shadow'] = np.where(df['close'] > df['open'], df['open'] - df['low'], df['close'] - df['low'])
-    df['Upper_Shadow'] = np.where(df['close'] > df['open'], df['high'] - df['close'], df['high'] - df['open'])
-
-    # ১. হ্যামার ক্যান্ডেল (বুলিশ রিভার্সাল)
-    # বডির তুলনায় নিচের শ্যাডো অন্তত দ্বিগুণ হবে এবং উপরের শ্যাডো খুব ছোট হবে
-    df['Hammer'] = (df['Lower_Shadow'] >= 2 * df['Body']) & (df['Upper_Shadow'] <= 0.1 * df['Total_Range'])
-
-    # ২. বুলিশ এনগালফিং (Bullish Engulfing)
-    # আগের ক্যান্ডেল লাল এবং বর্তমান ক্যান্ডেল সবুজ যা আগেরটিকে পুরোপুরি ঢেকে ফেলে
-    df['Bullish_Engulfing'] = (df['close'].shift(1) < df['open'].shift(1)) & \
-                              (df['close'] > df['open']) & \
-                              (df['open'] <= df['close'].shift(1)) & \
-                              (df['close'] >= df['open'].shift(1))
-
-    # ৩. আপনার স্পেশাল 'প্যানিক রিভার্সাল' (Panic Drop Recovery)
-    # টানা ৩টি ক্যান্ডেল লাল (প্যানিক সেল) এবং ভলিউম গড়ের চেয়ে বেশি, তারপরের ক্যান্ডেল সবুজ বা বাউন্স
-    df['Consecutive_Red'] = (df['close'] < df['open']).rolling(window=3).sum()
-    df['Panic_Drop'] = (df['Consecutive_Red'] == 3) & (df['volume'].shift(1) > df['Vol_SMA'].shift(1))
-
-    return df
-
-def generate_zero_loss_signals(df):
-    """
-    সব নিয়ম মেনে নিখুঁত এন্ট্রি, টার্গেট এবং নো-লস স্টপ লস জেনারেট করার ফাংশন
-    """
-    signals = []
-    
-    for i in range(len(df)):
-        if i < 20:  # ইন্ডিকেটর সেটআপের জন্য প্রথম ২০টি ক্যান্ডেল বাদ
-            continue
-            
-        # ক্যান্ডেলস্টিক কনফার্মেশন
-        is_hammer = df['Hammer'].iloc[i]
-        is_engulfing = df['Bullish_Engulfing'].iloc[i]
-        is_panic_reversal = df['Panic_Drop'].iloc[i-1] and (df['close'].iloc[i] > df['open'].iloc[i])
+        /* মূল কন্টেন্ট - কিতাবের তালিকা */
+        .container {
+            padding: 3rem 5%;
+        }
+        .section-title {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            color: #2c3e50;
+            font-size: 2rem;
+        }
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 30px;
+        }
+        .book-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .book-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .book-cover {
+            width: 100%;
+            height: 320px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #95a5a6;
+            font-size: 1.2rem;
+            border: 1px dashed #bdc3c7;
+        }
+        .book-title {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        .book-author {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
         
-        # টেকনিক্যাল ও স্মার্ট মানি কনফার্মেশন
-        is_macd_bullish = df['MACD'].iloc[i] > df['Signal_Line'].iloc[i]
-        is_smart_volume = df['volume'].iloc[i] > df['Vol_SMA'].iloc[i]
-        is_above_trend = df['close'].iloc[i] >= df['SMA_20'].iloc[i]
+        /* বাটন স্টাইল */
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+            font-size: 0.9rem;
+            transition: opacity 0.3s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .btn-read {
+            background: #3498db;
+        }
+        .btn-download {
+            background: #2ecc71;
+        }
 
-        # যদি ক্যান্ডেলস্টিক প্যাটার্ন মেলে এবং স্মার্ট মানি + MACD সিগন্যাল দেয়
-        if (is_hammer or is_engulfing or is_panic_reversal) and is_macd_bullish and is_smart_volume:
-            
-            entry_price = df['close'].iloc[i]
-            
-            # আল্ট্রা-সেফ স্টপ লস: গত ৩টি ক্যান্ডেলের মধ্যে সবচেয়ে লো-এর চেয়েও কিছুটা নিচে (যাতে হিট না করে)
-            recent_low = min(df['low'].iloc[i-2:i+1])
-            buffer = df['Total_Range'].iloc[i] * 0.15 # ১৫% এক্সট্রা সেফটি বাফার
-            stop_loss = recent_low - buffer
-            
-            # রিস্ক-রিওয়ার্ড ১:২ (লাভ নিশ্চিত করার জন্য)
-            risk = entry_price - stop_loss
-            target = entry_price + (risk * 2)
+        /* ফুটার */
+        footer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
 
-            signals.append({
-                'Index': i,
-                'Signal': '★ BUY (LEGEND ENTRY) ★',
-                'Entry_Price': round(entry_price, 2),
-                'Stop_Loss': round(stop_loss, 2),
-                'Target': round(target, 2),
-                'Reason': 'Panic Drop Recovery / Bullish Candlestick + High Volume Confirm'
-            })
-            
-    return pd.DataFrame(signals)
+        /* মোবাইল রেসপন্সিভ */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .search-box {
+                flex-direction: column;
+            }
+            .search-box input, .search-box button {
+                width: 100%;
+                border-radius: 5px;
+            }
+            .search-box button {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
 
-# --- রান করার নমুনা (Upstox থেকে ডেটা পাওয়ার পর যেভাবে কাজ করবে) ---
-# ডাটাফ্রেমে অবশ্যই 'open', 'high', 'low', 'close', 'volume' কলাম থাকতে হবে।
-if __name__ == "__main__":
-    print("লেজেন্ডারি ক্যান্ডেলস্টিক স্ক্যানার সচল করা হচ্ছে...")
-    
-    # এখানে আপনার Upstox API থেকে পাওয়া ৪ ঘণ্টার ওএইচএলসি (OHLC) ডেটা লোড হবে
-    # উদাহরণ হিসেবে আমরা ডামি ডেটা দিয়ে টেস্ট করতে পারি:
-    # df = pd.DataFrame(upstox_fetched_data)
-    
-    print("সিস্টেম প্রস্তুত। আপনার চার্ট ইনপুট করার সাথে সাথে এটি কাজ শুরু করবে।")
-            
+    <!-- হেডার -->
+    <header>
+        <h1>📚 অনলাইন কিতাবঘর</h1>
+        <nav>
+            <ul>
+                <li><a href="#">হোম</a></li>
+                <li><a href="#">ক্যাটাগরি</a></li>
+                <li><a href="#">নতুন কিতাব</a></li>
+                <li><a href="#">যোগাযোগ</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- সার্চ সেকশন -->
+    <section class="search-section">
+        <h2>আপনার পছন্দের কিতাবটি খুঁজুন</h2>
+        <p>হাজারো ইসলামিক কিতাব এবং পিডিএফ বিনামূল্যে পড়ুন ও ডাউনলোড করুন</p>
+        <div class="search-box">
+            <input type="text" placeholder="কিতাবের নাম বা লেখকের নাম লিখুন...">
+            <button type="submit">খুঁজুন</button>
+        </div>
+    </section>
+
+    <!-- মূল কন্টেন্ট -->
+    <main class="container">
+        <h2 class="section-title">জনপ্রিয় কিতাবসমূহ</h2>
+        
+        <div class="book-grid">
+            <!-- বইয়ের কার্ড ১ -->
+            <div class="book-card">
+                <div class="book-cover">বইয়ের কভার ছবি</div>
+                <h3 class="book-title">সহীহ বুখারী শরীফ</h3>
+                <p class="book-author">সংকলক: ইমাম বুখারী (রহ.)</p>
+                <div class="buttons">
+                    <a href="#" class="btn btn-read">📖 অনলাইনে পড়ুন</a>
+                    <a href="#" class="btn btn-download">⬇️ ডাউনলোড</a>
+                </div>
+            </div>
+
+            <!-- বইয়ের কার্ড ২ -->
+            <div class="book-card">
+                <div class="book-cover">বইয়ের কভার ছবি</div>
+                <h3 class="book-title">আর রাহীকুল মাখতূম</h3>
+                <p class="book-author">লেখক: সফিউর রহমান মোবারকপুরী</p>
+                <div class="buttons">
+                    <a href="#" class="btn btn-read">📖 অনলাইনে পড়ুন</a>
+                    <a href="#" class="btn btn-download">⬇️ ডাউনলোড</a>
+                </div>
+            </div>
+
+            <!-- বইয়ের কার্ড ৩ -->
+            <div class="book-card">
+                <div class="book-cover">বইয়ের কভার ছবি</div>
+                <h3 class="book-title">প্যারাডক্সিক্যাল সাজিদ</h3>
+                <p class="book-author">লেখক: আরিফ আজাদ</p>
+                <div class="buttons">
+                    <a href="#" class="btn btn-read">📖 অনলাইনে পড়ুন</a>
+                    <a href="#" class="btn btn-download">⬇️ ডাউনলোড</a>
+                </div>
+            </div>
+
+            <!-- বইয়ের কার্ড ৪ -->
+            <div class="book-card">
+                <div class="book-cover">বইয়ের কভার ছবি</div>
+                <h3 class="book-title">কুরআন মাজীদ (অনুবাদ)</h3>
+                <p class="book-author">অনুবাদ: ইসলামিক ফাউন্ডেশন</p>
+                <div class="buttons">
+                    <a href="#" class="btn btn-read">📖 অনলাইনে পড়ুন</a>
+                    <a href="#" class="btn btn-download">⬇️ ডাউনলোড</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ফুটার -->
+    <footer>
+        <p>&copy; ২০২৬ অনলাইন কিতাবঘর | সর্বস্বত্ব সংরক্ষিত</p>
+    </footer>
+
+</body>
+</html>
